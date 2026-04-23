@@ -17,6 +17,7 @@ use ratatui::{prelude::*, Terminal};
 use crate::collectors::tui_data::TuiData;
 use crate::tui::app::App;
 use crate::tui::app_events::AppEvent;
+use crate::tui::ui::cpu_barchart::draw_cpu_barchart;
 use crate::tui::ui::memory_chart::draw_memory_chart;
 
 /// The main TUI controller.
@@ -67,6 +68,7 @@ impl Tui {
                             // Renderizamos con los datos frescos
                             self.terminal.draw(|frame| {
                                 draw_memory_chart(frame, &self.app);
+                                draw_cpu_barchart(frame, &self.app);
                             })?;
                         }
                         Ok(AppEvent::Shutdown) => {

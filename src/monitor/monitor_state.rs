@@ -57,6 +57,14 @@ impl MonitorState {
                             // esto puede ser una funcion generic
                             if let Ok(mut cpu_buffer) = cpu_shared.lock() {
                                 cpu_buffer.update_buffer(&mut *sys);
+
+                                if let Some(last_snapshot) = cpu_buffer.last() {
+                                    let cpu_usage = last_snapshot.cpu_usage();
+                                    if let Ok(mut tui) = tui_shared.lock() {
+                                        tui.update_tui_buffer_cpu(cpu_usage);
+                                        //println!("{:#?}", tui);
+                                    }
+                                }
                             }
 
                             if let Ok(mut mem_buffer) = mem_shared.lock() {

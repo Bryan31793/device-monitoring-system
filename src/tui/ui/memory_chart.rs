@@ -15,7 +15,7 @@ use crate::tui::app::App;
 /// with proper scaling and axis labels. Does nothing if the terminal is too small.
 pub fn draw_memory_chart(frame: &mut Frame, app: &App) {
     // *** Cambiar unwrap para produccion ***
-    let size = create_chart_area(frame, 100, 50).unwrap();
+    let size = create_chart_area(frame, 100, 40).unwrap();
 
     let data_vec = extract_memory_data(app);
     if data_vec.is_empty() {
@@ -118,7 +118,8 @@ fn build_chart<'a>(
         .block(
             Block::default()
                 .title("Memory Usage")
-                .borders(Borders::ALL),
+                .borders(Borders::ALL)
+                .style(Color::Gray),
         )
         .x_axis(
             Axis::default()

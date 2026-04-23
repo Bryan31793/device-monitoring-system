@@ -3,7 +3,7 @@ use sysinfo::{System, CpuRefreshKind};
 //x|use crate::collectors::cpu;
 #[derive(Clone)]
 pub struct CpuSnapshot {
-    cpu_usage: Vec<f32>,
+    pub cpu_usage: Vec<f32>,
     cpu_avg: f32,
     cpu_max: f32,
     cpu_std: f32
@@ -77,5 +77,10 @@ impl CpuSnapshot {
             .sum::<f32>() / n;
 
         variance.sqrt()
+    }
+
+    pub fn cpu_usage(&self) -> Vec<f32> {
+        let cpu = self.cpu_usage.clone();
+        cpu
     }
 }
