@@ -1,4 +1,4 @@
-use sysinfo::{System, CpuRefreshKind};
+use sysinfo::System;
 
 //x|use crate::collectors::cpu;
 #[derive(Clone)]
@@ -37,13 +37,6 @@ impl CpuSnapshot {
 
     pub fn std(&self) -> f32 {
         self.cpu_std
-    }
-
-    ///esta ya no va
-    fn refresh_cpu(sys: &mut System) {
-        sys.refresh_cpu_specifics(
-            CpuRefreshKind::nothing()
-            .with_cpu_usage());
     }
 
     fn calc_cpu_avg(cpu_usage: &[f32]) -> f32{

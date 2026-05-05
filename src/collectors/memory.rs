@@ -1,4 +1,4 @@
-use sysinfo::{System, MemoryRefreshKind};
+use sysinfo::System;
 
 const BYTES_IN_GB: f64 = 1_000_000_000.0;
 
@@ -24,14 +24,6 @@ impl From<&System> for MemorySnapshot {
 }
 
 impl MemorySnapshot {
-    ///esta ya no va.
-    fn refresh_memory(sys: &mut System) {   
-        sys.refresh_memory_specifics(
-            MemoryRefreshKind::nothing()
-            .with_ram()
-            .with_swap());
-    }
-
     fn bytes_to_gb(value: u64) -> f64 {
         value as f64 / BYTES_IN_GB
     }

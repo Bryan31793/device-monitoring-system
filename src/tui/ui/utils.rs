@@ -2,9 +2,11 @@ use std::io;
 use ratatui::Frame;
 use ratatui::layout::Rect;
 
-/// Creates the chart area for the terminal
-/// el return aun no esta definido
-fn create_chart_area(frame: &mut Frame, percent_width: u16, percent_height: u16) -> Result<Rect, io::Error> {
+/// Calculates a chart area based on percentage dimensions.
+///
+/// Returns a centered rectangle within the terminal frame, scaled by percent_width and percent_height.
+/// Errors if the resulting area is too small to render (< 10x5).
+pub fn create_chart_area(frame: &mut Frame, percent_width: u16, percent_height: u16, x: u16, y: u16) -> Result<Rect, io::Error> {
     let size = frame.area();
 
     let chart_width = size.width * percent_width / 100;
@@ -18,8 +20,8 @@ fn create_chart_area(frame: &mut Frame, percent_width: u16, percent_height: u16)
     }
 
     Ok(Rect {
-        x: 0,
-        y: 0,
+        x,
+        y,
         width: chart_width,
         height: chart_height,
     })

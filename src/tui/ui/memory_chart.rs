@@ -55,8 +55,7 @@ fn create_datasets<'a>(data: &'a[(f64, f64)]) -> Vec<Dataset<'a>> {
         .data(data)]
 }
 
-/// Creates the chart area for the terminal
-/// el return aun no esta definido
+/// Creates the area in which the chart would be placed.
 fn create_chart_area(frame: &mut Frame, percent_width: u16, percent_height: u16) -> Result<Rect, io::Error> {
     let size = frame.area();
 

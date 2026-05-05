@@ -4,12 +4,18 @@ use ratatui::{
     widgets::{Bar, BarChart, BarGroup, Block, Borders},
     layout::{Layout, Constraint},
 };
-use std::{io, str::from_boxed_utf8_unchecked};
+
 use crate::tui::app::App;
+use crate::tui::ui::utils::create_chart_area;
 
-
+/// Renders a barchart displaying CPU usage per core.
+///
+/// Each bar represents a CPU core, color-coded by usage:
+/// - Green: < 50%
+/// - Yellow: 50-80%
+/// - Red: > 80%
 pub fn draw_cpu_barchart(frame: &mut Frame, app: &App) {
-    let size = create_chart_area(frame, 40, 30).unwrap();
+    let size = create_chart_area(frame, 40, 30, 0, 0).unwrap();
 
     let (bars, xd) = extract_cpu_bars_data(app);
     if bars.is_empty() {
@@ -23,7 +29,6 @@ pub fn draw_cpu_barchart(frame: &mut Frame, app: &App) {
     ]);
     let [_, chart_area] = layout.areas(size);
 
-
     // MEJORA 1: max(100) fuerza escala real 0-100%
     // MEJORA 2: bar_width(4) + bar_gap(1) dan espacio a labels y separación visual
     let group = build_bars(bars);
@@ -32,39 +37,15 @@ pub fn draw_cpu_barchart(frame: &mut Frame, app: &App) {
     frame.render_widget(chart, chart_area);
 }
 
-/// Creates the chart area for the terminal
-/// el return aun no esta definido
-/// esta funcion ya existe en otro archivo
-/// ** REFACTORIZARLA **
-fn create_chart_area(frame: &mut Frame, percent_width: u16, percent_height: u16) -> Result<Rect, io::Error> {
-    let size = frame.area();
-
-    let chart_width = size.width * percent_width / 100;
-    let chart_height = size.height * percent_height / 100;
-
-    if chart_width < 10 || chart_height < 5 {
-        return Err(io::Error::new(
-            io::ErrorKind::InvalidData, 
-            "El area resultante es demasiado pequeña para el grafico"
-        ));
-    }
-
-    Ok(Rect {
-        x: 0,
-        y: 0,
-        width: chart_width,
-        height: chart_height,
-    })
-} 
-
-/// Construye las barras con color según nivel de uso.
+/// Extracts CPU usage data and builds styled bars for each core.
+///
+/// Returns a tuple of (bars, max_usage) where bars are ready to render
+/// and max_usage is used for chart scaling.
 fn extract_cpu_bars_data(app: &App) -> (Vec<Bar<'static>>, f32) {
     let Ok(tui_data) = app.tui_data.lock() else {
         return (Vec::new(), 0.0);
     };
-    let Some(cpu_data) = tui_data.cpu_usage.back() else {
-        return (Vec::new(), 0.0);
-    };
+    let cpu_data = &tui_data.cpu_usage;
 
     let max_usage = cpu_data.iter().cloned().fold(0.0_f32, f32::max);
 
@@ -106,11 +87,13 @@ fn extract_cpu_bars_data(app: &App) -> (Vec<Bar<'static>>, f32) {
     (xd, max_usage)
 }
 
+/// Creates a bar group from the individual bars.
 fn build_bars(bars: Vec<Bar<'_>>) -> BarGroup<'_> {
     BarGroup::default()
     .bars(&bars)
 }
 
+/// Builds the barchart widget with styling and dynamic scaling.
 fn build_barchart_chart(group: BarGroup<'_>, max_usage: f32) -> BarChart<'_> {
 
     let dynamic_max = (max_usage as u64).max(25);  // piso de 25%
