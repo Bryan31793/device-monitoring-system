@@ -1,12 +1,12 @@
 use std::thread;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
-use sysinfo::{System, RefreshKind, CpuRefreshKind, MemoryRefreshKind};
+use sysinfo::{System, RefreshKind, CpuRefreshKind, MemoryRefreshKind, Components};
 use crossbeam_channel::{Receiver, unbounded};
 use crossbeam_channel::select;
 use crate::collectors::tui_data::TuiData;
 use crate::monitor::snapshot::MetricBuffer;
-use crate::collectors::memory::MemorySnapshot;
+use crate::collectors::ram::MemorySnapshot;
 use crate::collectors::cpu::CpuSnapshot;
 use crate::tui::app_events::AppEvent;
 
@@ -14,6 +14,7 @@ static BUFFER_CAPACITY: usize = 120;
 
 pub struct MonitorState {
     sys: Arc<Mutex<System>>,
+    components: Arc<Mutex<Components>>,
     pub mem: Arc<Mutex<MetricBuffer<MemorySnapshot>>>,
     pub cpu: Arc<Mutex<MetricBuffer<CpuSnapshot>>>,
     pub tui_data: Arc<Mutex<TuiData>>,
@@ -22,14 +23,24 @@ pub struct MonitorState {
 impl MonitorState {
     pub fn new() -> Self {
         Self {
-            sys: Arc::new(Mutex::new(System::new())),
-            mem: Arc::new(Mutex::new(
+            sys: Arc::new(
+                Mutex::new(
+                    System::new())
+            ),
+            components: Arc::new(
+                Mutex::new(
+                    Components::new_with_refreshed_list())
+            ),
+            mem: Arc::new(
+                Mutex::new(
                 MetricBuffer::<MemorySnapshot>::new(BUFFER_CAPACITY),
             )),
             cpu: Arc::new(Mutex::new(
                 MetricBuffer::<CpuSnapshot>::new(BUFFER_CAPACITY),
             )),
-            tui_data: Arc::new(Mutex::new(TuiData::new(BUFFER_CAPACITY))),
+            tui_data: Arc::new(
+                Mutex::new(
+                    TuiData::new(BUFFER_CAPACITY))),
         }
     }
 
@@ -38,6 +49,7 @@ impl MonitorState {
         let (tx, rx) = unbounded::<AppEvent>();
 
         let sys_shared = Arc::clone(&self.sys);
+        let components_shared = Arc::clone(&self.components);
         let mem_shared = Arc::clone(&self.mem);
         let cpu_shared = Arc::clone(&self.cpu);
         let tui_shared = Arc::clone(&self.tui_data);
@@ -51,29 +63,34 @@ impl MonitorState {
                         break;
                     }
                     default(Duration::from_secs(2)) => {
-                        if let Ok(mut sys) = sys_shared.lock() {
+                        
+                        if let Ok(mut sys) = sys_shared.lock() && let Ok(mut comp) = components_shared.lock() {
                             MonitorState::refresh_components(&mut *sys);
 
                             // esto puede ser una funcion generic
                             if let Ok(mut cpu_buffer) = cpu_shared.lock() {
-                                cpu_buffer.update_buffer(&mut *sys);
+                                cpu_buffer.update_buffer(&mut *sys, &mut *comp);
 
                                 if let Some(last_snapshot) = cpu_buffer.last() {
                                     let cpu_usage = last_snapshot.cpu_usage();
+                                    let cpu_temp = last_snapshot.cpu_temp_celsius();
                                     if let Ok(mut tui) = tui_shared.lock() {
+                                        //esto se puede refactorizar en una funcion que actualice todo
+                                        //en vez de llamar a cada actualizacion indiviualmente
                                         tui.update_tui_buffer_cpu(cpu_usage);
+                                        tui.update_tui_cpu_temp_celsius(cpu_temp);
                                         //println!("{:#?}", tui);
                                     }
                                 }
                             }
 
                             if let Ok(mut mem_buffer) = mem_shared.lock() {
-                                mem_buffer.update_buffer(&mut *sys);
+                                mem_buffer.update_buffer(&mut *sys, &mut *comp);
 
                                 if let Some(last_snapshot) = mem_buffer.last() {
-                                    let used_memory = last_snapshot.used_memory();
+                                    let used_memory = last_snapshot.used_memory_tui();
                                     if let Ok(mut tui) = tui_shared.lock() {
-                                        tui.update_tui_buffer(used_memory);
+                                        tui.update_tui_buffer_ram(used_memory);
                                         //println!("{:#?}", tui);
                                     }
                                 }

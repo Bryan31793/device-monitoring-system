@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
-use sysinfo::System;
-use crate::collectors::memory::MemorySnapshot;
+use sysinfo::{System, Components};
+use crate::collectors::ram::MemorySnapshot;
 use crate::collectors::cpu::CpuSnapshot;
 
 // ─── MetricBuffer ────────────────────────────────────────────────────────────
@@ -20,12 +20,12 @@ impl<T: MetricSnapshots> MetricBuffer<T> {
 
     /// Empuja un valor solo si ha pasado el intervalo configurado.
     /// Retorna true si efectivamente se hizo push.
-    pub fn update_buffer(&mut self, sys: &System) where T: Clone {
+    pub fn update_buffer(&mut self, sys: &System, components: &mut Components) where T: Clone {
         if self.values.len() == self.capacity {
             self.values.pop_front();
         }   
 
-        self.values.push_back(T::get_snapshot(sys));
+        self.values.push_back(T::get_snapshot(sys, components));
         
     }
 
@@ -47,17 +47,17 @@ impl<T: MetricSnapshots> MetricBuffer<T> {
 }
 
 pub trait MetricSnapshots {
-    fn get_snapshot(sys: &System) -> Self;
+    fn get_snapshot(sys: &System, components: &mut Components) -> Self;
 }
 
 impl MetricSnapshots for MemorySnapshot {
-    fn get_snapshot(sys: &System) -> Self {
+    fn get_snapshot(sys: &System, _: &mut Components) -> Self {
         MemorySnapshot::from(sys)
     }
 }
 
 impl MetricSnapshots for CpuSnapshot {
-    fn get_snapshot(sys: &System) -> Self {
-        CpuSnapshot::from(sys)
+    fn get_snapshot(sys: &System, components: &mut Components) -> Self {
+        CpuSnapshot::new(sys, components)
     }
 }

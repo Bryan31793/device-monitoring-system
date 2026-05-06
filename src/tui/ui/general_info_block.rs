@@ -28,23 +28,29 @@ pub fn draw_general_info_block(frame: &mut Frame, app: &App) {
 /// Extracts current RAM and CPU usage statistics.
 fn extract_general_information(app: &App) -> Vec<Line<'_>> {
     if let Ok(tui_data) = app.tui_data.lock() {
-        let mem_percentage = tui_data.used_memory.back();
-        let cpu_general_percentage = tui_data.cpu_usage_percentage();
         let text = vec![
             Line::from(vec![
                 Span::styled("RAM usage: ", Style::new().cyan().bold()),
                 Span::styled(
-                    format!("{} GB", mem_percentage.unwrap()),
+                    format!("{} GB", tui_data.used_memory.back().unwrap()),
                     Style::new().green().bold(),
                 ),
             ]),
             Line::from(vec![
                 Span::styled("CPU usage: ", Style::new().cyan().bold()),
                 Span::styled(
-                    format!("{}%", cpu_general_percentage),
+                    format!("{}%", tui_data.cpu_usage_percentage()),
                     Style::new().green().bold(),
                 ),
             ]),
+            Line::from(vec![
+                Span::styled("CPU temp: ", Style::new().cyan().bold()),
+                Span::styled(
+                    format!("{} °C", tui_data.cpu_temp_celsius),
+                    Style::new().green().bold(),
+                ),
+            ]),
+            
         ];
         text
     } else {

@@ -45,7 +45,7 @@ fn extract_cpu_bars_data(app: &App) -> (Vec<Bar<'static>>, f32) {
     let Ok(tui_data) = app.tui_data.lock() else {
         return (Vec::new(), 0.0);
     };
-    let cpu_data = &tui_data.cpu_usage;
+    let cpu_data = &tui_data.cpu_cores_usage;
 
     let max_usage = cpu_data.iter().cloned().fold(0.0_f32, f32::max);
 
