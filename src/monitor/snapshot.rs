@@ -1,16 +1,17 @@
 use std::collections::VecDeque;
-use sysinfo::{System, Components};
-use crate::collectors::ram::MemorySnapshot;
-use crate::collectors::cpu::CpuSnapshot;
+use sysinfo::{System, Components, DiskUsage};
+//use procfs::DiskStat;
+use crate::collectors::system_snapshot::ram::MemorySnapshot;
+use crate::collectors::system_snapshot::cpu::CpuSnapshot;
+use crate::collectors::system_snapshot::disk::DiskSnapshot;
 
-// ─── MetricBuffer ────────────────────────────────────────────────────────────
 
 pub struct MetricBuffer<T> {
     values: VecDeque<T>,
     capacity: usize,
 }
 
-impl<T: MetricSnapshots> MetricBuffer<T> {
+impl<'a, T: MetricSnapshots<'a>> MetricBuffer<T> {
     pub fn new(capacity: usize) -> Self {
         Self {
             values: VecDeque::<T>::with_capacity(capacity),
@@ -20,12 +21,12 @@ impl<T: MetricSnapshots> MetricBuffer<T> {
 
     /// Empuja un valor solo si ha pasado el intervalo configurado.
     /// Retorna true si efectivamente se hizo push.
-    pub fn update_buffer(&mut self, sys: &System, components: &mut Components) where T: Clone {
+    pub fn update_buffer(&mut self, params: T::Params) where T: Clone {
         if self.values.len() == self.capacity {
             self.values.pop_front();
         }   
 
-        self.values.push_back(T::get_snapshot(sys, components));
+        self.values.push_back(T::get_snapshot(params));
         
     }
 
@@ -46,18 +47,28 @@ impl<T: MetricSnapshots> MetricBuffer<T> {
 
 }
 
-pub trait MetricSnapshots {
-    fn get_snapshot(sys: &System, components: &mut Components) -> Self;
+pub trait MetricSnapshots<'a> {
+    type Params;
+    fn get_snapshot(params: Self::Params) -> Self;
 }
 
-impl MetricSnapshots for MemorySnapshot {
-    fn get_snapshot(sys: &System, _: &mut Components) -> Self {
+impl<'a> MetricSnapshots<'a> for MemorySnapshot {
+    type Params = &'a System;
+    fn get_snapshot(sys: Self::Params) -> Self {
         MemorySnapshot::from(sys)
     }
 }
 
-impl MetricSnapshots for CpuSnapshot {
-    fn get_snapshot(sys: &System, components: &mut Components) -> Self {
+impl<'a> MetricSnapshots<'a> for CpuSnapshot {
+    type Params = (&'a System, &'a mut Components);
+    fn get_snapshot((sys, components): Self::Params) -> Self {
         CpuSnapshot::new(sys, components)
+    }
+}
+
+impl<'a> MetricSnapshots<'a> for DiskSnapshot {
+    type Params = &'a DiskUsage;
+    fn get_snapshot(disk_usage: Self::Params) -> Self {
+        DiskSnapshot::new(disk_usage)
     }
 }
