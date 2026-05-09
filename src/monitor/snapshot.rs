@@ -1,5 +1,6 @@
 use std::collections::VecDeque;
-use sysinfo::{System, Components, DiskUsage};
+use sysinfo::{Components, Disks, Networks, System};
+use crate::collectors::system_snapshot::network::NetworkSnapshot;
 //use procfs::DiskStat;
 use crate::collectors::system_snapshot::ram::MemorySnapshot;
 use crate::collectors::system_snapshot::cpu::CpuSnapshot;
@@ -67,8 +68,16 @@ impl<'a> MetricSnapshots<'a> for CpuSnapshot {
 }
 
 impl<'a> MetricSnapshots<'a> for DiskSnapshot {
-    type Params = &'a DiskUsage;
-    fn get_snapshot(disk_usage: Self::Params) -> Self {
-        DiskSnapshot::new(disk_usage)
+    type Params = &'a Disks;
+    fn get_snapshot(disks: Self::Params) -> Self {
+        DiskSnapshot::new(disks)
     }
 }
+
+impl<'a> MetricSnapshots<'a> for NetworkSnapshot {
+    type Params = &'a Networks;
+    fn get_snapshot(networks: Self::Params) -> Self {
+        NetworkSnapshot::new(networks)
+    }
+}
+    
